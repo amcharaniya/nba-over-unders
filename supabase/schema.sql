@@ -64,11 +64,7 @@ create policy "edit own sheet before deadline" on public.sheets
 
 -- No delete policy: sheets can't be deleted from the website.
 
--- 5. Add your league. Replace the emails with the ones each friend will sign in with.
-insert into public.members (email, player) values
-  ('amaan@example.com',   'Amaan'),
-  ('nadeem@example.com',  'Nadeem'),
-  ('kaba@example.com',    'Kaba'),
-  ('vishal@example.com',  'Vishal'),
-  ('sina@example.com',    'Sina')
-on conflict (email) do update set player = excluded.player;
+-- 5. Add your league in a separate query (kept out of this public repo), e.g.:
+--   insert into public.members (email, player) values
+--     ('friend@example.com', 'Amaan')
+--   on conflict (email) do update set player = excluded.player;

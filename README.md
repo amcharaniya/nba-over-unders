@@ -22,7 +22,7 @@ An NBA win-total over/under pool for five friends. Everyone picks Over or Under 
 
 ### 1. Supabase (about 10 minutes)
 1. Create a free account at supabase.com and a new project. Any name and region work; save the database password somewhere.
-2. Open **SQL Editor → New query**. Paste `supabase/schema.sql`, replace the five example emails at the bottom with your friends' real emails, and click **Run**.
+2. Open **SQL Editor → New query**. Paste `supabase/schema.sql` and click **Run**. Then run a second query adding each friend's email (see step 5 at the bottom of the file). Keep emails out of this public repo.
 3. Open **Authentication → URL Configuration**:
    - **Site URL:** `https://<your-github-username>.github.io/<repo-name>/`
    - **Redirect URLs:** add that same URL.
