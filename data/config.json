@@ -1,0 +1,135 @@
+{
+ "season": "2026-27",
+ "players": [
+  "Amaan",
+  "Nadeem",
+  "Kaba",
+  "Vishal",
+  "Sina"
+ ],
+ "lockCount": 5,
+ "picksCloseAt": "2026-10-20T18:50:00Z",
+ "teams": {
+  "BOS": {
+   "name": "Boston Celtics",
+   "line": 50.5
+  },
+  "ATL": {
+   "name": "Atlanta Hawks",
+   "line": 43.5
+  },
+  "BRK": {
+   "name": "Brooklyn Nets",
+   "line": 24.5
+  },
+  "CHO": {
+   "name": "Charlotte Hornets",
+   "line": 38.5
+  },
+  "CHI": {
+   "name": "Chicago Bulls",
+   "line": 29.5
+  },
+  "CLE": {
+   "name": "Cleveland Cavaliers",
+   "line": 48.5
+  },
+  "DAL": {
+   "name": "Dallas Mavericks",
+   "line": 33.5
+  },
+  "DET": {
+   "name": "Detroit Pistons",
+   "line": 48.5
+  },
+  "DEN": {
+   "name": "Denver Nuggets",
+   "line": 47.5
+  },
+  "GSW": {
+   "name": "Golden State Warriors",
+   "line": 38.5
+  },
+  "HOU": {
+   "name": "Houston Rockets",
+   "line": 47.5
+  },
+  "IND": {
+   "name": "Indiana Pacers",
+   "line": 43.5
+  },
+  "LAC": {
+   "name": "Los Angeles Clippers",
+   "line": 29.5
+  },
+  "LAL": {
+   "name": "Los Angeles Lakers",
+   "line": 44.5
+  },
+  "MEM": {
+   "name": "Memphis Grizzlies",
+   "line": 29.5
+  },
+  "MIA": {
+   "name": "Miami Heat",
+   "line": 44.5
+  },
+  "MIN": {
+   "name": "Minnesota Timberwolves",
+   "line": 47.5
+  },
+  "MIL": {
+   "name": "Milwaukee Bucks",
+   "line": 26.5
+  },
+  "NOP": {
+   "name": "New Orleans Pelicans",
+   "line": 28.5
+  },
+  "NYK": {
+   "name": "New York Knicks",
+   "line": 51.5
+  },
+  "OKC": {
+   "name": "Oklahoma City Thunder",
+   "line": 61.5
+  },
+  "ORL": {
+   "name": "Orlando Magic",
+   "line": 43.5
+  },
+  "PHO": {
+   "name": "Phoenix Suns",
+   "line": 39.5
+  },
+  "PHI": {
+   "name": "Philadelphia 76ers",
+   "line": 50.5
+  },
+  "POR": {
+   "name": "Portland Trail Blazers",
+   "line": 41.5
+  },
+  "SAC": {
+   "name": "Sacramento Kings",
+   "line": 20.5
+  },
+  "SAS": {
+   "name": "San Antonio Spurs",
+   "line": 60.5
+  },
+  "TOR": {
+   "name": "Toronto Raptors",
+   "line": 46.5
+  },
+  "UTA": {
+   "name": "Utah Jazz",
+   "line": 37.5
+  },
+  "WAS": {
+   "name": "Washington Wizards",
+   "line": 33.5
+  }
+ },
+ "firstGame": "Celtics @ Pistons, Tue Oct 20 2026, 3:00 PM ET"
+}

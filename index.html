@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Over/Under League</title>
+<meta name="description" content="NBA win-total over/under picks with locks, projected points and a chase tracker.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23d4561c'/%3E%3Cpath d='M2 16h28M16 2v28M6 6c5 5 5 15 0 20M26 6c-5 5-5 15 0 20' stroke='%2315202b' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: scorer's-table stat sheet — standings ledger up top, wide team board below, pick sheet as its own tab */
+:root {
+  --bg: #f3f4f1;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #5d6873;
+  --line: #d9ddd8;
+  --accent: #d4561c;
+  --over: #1f7a4d;
+  --over-bg: #e2f2e8;
+  --under: #2f5fa8;
+  --under-bg: #e3ecf8;
+  --hit-bg: #dff1e5;
+  --miss-bg: #f8e3df;
+  --miss: #a3372a;
+  --lock: #b7791f;
+  --stripe: #f7f8f5;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11161b; --surface: #182028; --ink: #e8ebe6; --muted: #98a3ad; --line: #2b3640;
+    --accent: #f07a3e;
+    --over: #5cc98e; --over-bg: #173527; --under: #7fa8ea; --under-bg: #1a2a42;
+    --hit-bg: #183a29; --miss-bg: #3d1f1b; --miss: #ef8d7f; --lock: #e3b04f; --stripe: #1c252e;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 20px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+a { color: inherit; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; border-bottom: 3px solid var(--ink); padding-bottom: 12px; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(34px, 6vw, 52px); line-height: .9; margin: 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+.brand h1 span { color: var(--accent); }
+.brand p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); text-align: right; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav.tabs button { font: 600 15px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; background: none; border: 0; color: var(--muted); padding: 10px 14px; border-bottom: 3px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+button:focus-visible, input:focus-visible, th[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+h2 { font: 700 20px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 10px; }
+.section-head p { margin: 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+.leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.leader { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "rank name pts" "bar bar bar" "foot foot foot"; gap: 4px 10px; align-items: baseline; }
+.leader.first { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.leader .rank { grid-area: rank; font: 700 15px var(--f-mono); color: var(--muted); }
+.leader .name { grid-area: name; font: 700 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leader .pts { grid-area: pts; font: 600 26px/1 var(--f-mono); }
+.leader .pts small { font-size: 11px; color: var(--muted); font-weight: 500; margin-left: 2px; }
+.leader .bar { grid-area: bar; height: 6px; background: var(--stripe); border-radius: 3px; overflow: hidden; display: flex; margin-top: 6px; }
+.leader .bar i { display: block; height: 100%; }
+.leader .bar i.clinched { background: var(--ink); }
+.leader .bar i.proj { background: var(--accent); }
+.leader .foot { grid-area: foot; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14px; }
+th, td { padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+thead th { font: 600 12px/1.1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--surface); position: sticky; top: 0; z-index: 2; vertical-align: bottom; }
+thead th.sortable { cursor: pointer; user-select: none; }
+thead th.sortable:hover, thead th[aria-sort] { color: var(--ink); }
+tbody tr:nth-child(even) td { background: var(--stripe); }
+td.team, th.team { position: sticky; left: 0; z-index: 1; background: var(--surface); border-right: 1px solid var(--line); }
+tbody tr:nth-child(even) td.team { background: var(--stripe); }
+thead th.team { z-index: 3; }
+.team-cell { display: flex; align-items: center; gap: 8px; }
+.abbr { font: 600 11px var(--f-mono); letter-spacing: .04em; color: var(--muted); width: 30px; }
+.tname { font-weight: 500; }
+th.r, td.r { text-align: right; }
+th.c, td.c { text-align: center; }
+th.player { text-align: center; color: var(--ink); }
+th.player.me { color: var(--accent); }
+
+.pill { display: inline-flex; align-items: center; gap: 4px; font: 600 12px/1 var(--f-body); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.O { color: var(--over); background: var(--over-bg); }
+.pill.U { color: var(--under); background: var(--under-bg); }
+.pill.none { color: var(--muted); background: var(--stripe); }
+.pill.final { box-shadow: inset 0 0 0 1.5px currentColor; }
+.chase { display: flex; flex-direction: column; gap: 2px; }
+.chase .status { font-weight: 600; font-size: 13px; }
+.chase .status.done { color: var(--muted); }
+.chase .detail { font-size: 12px; color: var(--muted); }
+
+.pick { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 40px; padding: 3px 6px; border-radius: 4px; font: 600 13px var(--f-mono); }
+.pick.hit { background: var(--hit-bg); color: var(--over); }
+.pick.miss { background: var(--miss-bg); color: var(--miss); }
+.pick.empty { color: var(--muted); font-weight: 400; }
+.pick.final { box-shadow: inset 0 0 0 1.5px currentColor; }
+.lock-ic { width: 11px; height: 11px; color: var(--lock); flex: none; }
+tfoot td { font: 600 13px var(--f-mono); border-top: 2px solid var(--ink); border-bottom: 0; background: var(--surface); }
+tfoot td.team { font-family: var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: 10px; align-items: center; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.sheet-bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; border-bottom: 1px solid var(--line); }
+.whoami { font-size: 14px; }
+.whoami b { font: 700 18px var(--f-display); text-transform: uppercase; letter-spacing: .04em; }
+.counts { display: flex; gap: 14px; font-size: 13px; align-items: center; flex-wrap: wrap; }
+.counts b { font-family: var(--f-mono); font-size: 15px; }
+.counts .ok { color: var(--over); }
+.save-state { font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; }
+
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 8px; margin-top: 12px; }
+.slip { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; grid-template-areas: "info line" "ctrl ctrl"; gap: 8px 10px; }
+.slip.locked { border-color: var(--lock); box-shadow: inset 3px 0 0 var(--lock); }
+.slip .info { grid-area: info; min-width: 0; }
+.slip .info .tname { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slip .info .sub { font-size: 12px; color: var(--muted); }
+.slip .line { grid-area: line; text-align: right; }
+.slip .line b { font: 600 22px/1 var(--f-mono); display: block; }
+.slip .line small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.slip .ctrl { grid-area: ctrl; display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+.seg { font: 600 14px var(--f-body); padding: 8px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.seg.O[aria-pressed="true"] { background: var(--over); color: var(--surface); border-color: var(--over); }
+.seg.U[aria-pressed="true"] { background: var(--under); color: var(--surface); border-color: var(--under); }
+.lockbtn { display: inline-flex; align-items: center; gap: 5px; font: 600 13px var(--f-body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+.lockbtn .lock-ic { width: 13px; height: 13px; color: currentColor; }
+.lockbtn[aria-pressed="true"] { background: var(--lock); color: var(--surface); border-color: var(--lock); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+.notice { background: var(--surface); border: 1px dashed var(--line); border-radius: 6px; padding: 16px; color: var(--muted); font-size: 14px; }
+.notice strong { color: var(--ink); }
+.signin { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; max-width: 460px; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.signin h3 { margin: 0; font: 700 20px var(--f-display); text-transform: uppercase; letter-spacing: .05em; }
+.signin p { margin: 0; color: var(--muted); font-size: 14px; }
+.signin form { display: flex; gap: 8px; flex-wrap: wrap; }
+.signin input { flex: 1 1 220px; min-width: 0; font: 400 15px var(--f-body); padding: 10px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.btn { font: 600 14px var(--f-body); padding: 10px 16px; border-radius: 4px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px 24px; font-size: 14px; }
+.rules div { min-width: 0; }
+.rules h3 { font: 700 15px var(--f-display); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 4px; }
+.rules p { margin: 0; color: var(--muted); max-width: 60ch; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 6px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+@media (max-width: 560px) {
+  .meta { align-items: flex-start; text-align: left; }
+  th, td { padding: 7px 8px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .leader .bar i { transition: width .4s ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Over/Under <span>League</span></h1>
+      <p id="seasonLabel">NBA regular season · 82 games</p>
+    </div>
+    <div class="meta">
+      <span id="updated">Loading standings…</span>
+      <a id="sourceLink" href="https://www.basketball-reference.com/" target="_blank" rel="noopener">Basketball-Reference</a>
+      <span id="authMeta"></span>
+    </div>
+  </header>
+
+  <div class="notice" id="banner" hidden></div>
+
+  <section aria-labelledby="lbHead">
+    <div class="section-head">
+      <h2 id="lbHead">Standings</h2>
+      <p>Projected points score every pick as if the season ended at each team's current win %. Dark bar = points already clinched.</p>
+    </div>
+    <div class="leaders" id="leaders"></div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-board" aria-selected="true" data-view="board">Team board</button>
+    <button role="tab" id="tab-picks" aria-selected="false" data-view="picks">My picks</button>
+    <button role="tab" id="tab-rules" aria-selected="false" data-view="rules">Scoring</button>
+  </nav>
+
+  <section id="view-board" role="tabpanel" aria-labelledby="tab-board">
+    <div class="table-wrap"><table id="board"></table></div>
+    <div class="legend">
+      <span><span class="pick hit">O</span> trending correct</span>
+      <span><span class="pick miss">U</span> trending wrong</span>
+      <span><span class="pick hit final">O</span> clinched</span>
+      <span><svg class="lock-ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1Zm2 0h4V5a2 2 0 1 0-4 0v2Z"/></svg> lock (3 pts)</span>
+      <span>Pace = current win % × 82</span>
+    </div>
+  </section>
+
+  <section id="view-picks" role="tabpanel" aria-labelledby="tab-picks" hidden>
+    <div id="signinBox" class="signin" hidden>
+      <h3>Sign in to pick</h3>
+      <p>Enter the email the league has on file. We'll send you a sign-in link; open it on this device.</p>
+      <form id="signinForm">
+        <input id="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-label="Email address">
+        <button class="btn" type="submit">Email me a link</button>
+      </form>
+      <p id="signinMsg" aria-live="polite"></p>
+    </div>
+    <div id="sheetArea" hidden>
+      <div class="sheet-bar">
+        <div class="whoami">Picking as <b id="meName"></b></div>
+        <div class="counts">
+          <span>Picks <b id="cPicks">0/30</b></span>
+          <span>Locks <b id="cLocks">0/5</b></span>
+          <span class="save-state" id="saveState" aria-live="polite"></span>
+        </div>
+      </div>
+      <p class="muted" id="sheetNote" style="font-size:13px;margin:10px 0 0"></p>
+      <div class="sheet" id="sheet"></div>
+    </div>
+    <div id="notMember" class="notice" hidden></div>
+  </section>
+
+  <section id="view-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+    <div class="rules">
+      <div><h3>Picks</h3><p>Pick Over or Under on all 30 win totals. Each correct pick is worth 1 point.</p></div>
+      <div><h3>Locks</h3><p>Choose 5 picks as locks. A correct lock is worth 3 points total instead of 1. A wrong lock is worth 0.</p></div>
+      <div><h3>Deadline</h3><p>Picks lock 10 minutes before the season's first tip-off. Until then each person sees only their own sheet; everyone's picks appear at the deadline.</p></div>
+      <div><h3>Projected points</h3><p>Until the season ends, each team's result is projected from its current win % against the line's win % (line ÷ 82). A team with no games played isn't scored yet.</p></div>
+      <div><h3>Chase</h3><p>A team is live while both outcomes are still possible. Once a team's wins pass the line the Over is clinched; once it can't reach the line even by winning out, the Under is clinched. Clinched results override pace.</p></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script>
+(() => {
+  const GAMES = 82;
+  const LOCK_SVG = '<svg class="lock-ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1Zm2 0h4V5a2 2 0 1 0-4 0v2Z"/></svg>';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  const state = {
+    config: null,
+    standings: null,
+    sheets: {},       // player -> {picks, locks}; your own before the deadline, everyone's after
+    session: null,
+    player: null,     // your league name, from the members table
+    memberChecked: false,
+    view: store.get("ou.view") || "board",
+    sort: { key: "name", dir: 1 },
+    wasClosed: null,
+  };
+  if (!["board", "picks", "rules"].includes(state.view)) state.view = "board";
+
+  const sb = window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY
+    ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+    : null;
+
+  // ---------- scoring ----------
+  function teamStatus(abbr) {
+    const t = state.config.teams[abbr];
+    const rec = state.standings?.teams?.[abbr] || { w: 0, l: 0 };
+    const w = rec.w, l = rec.l, gp = w + l, rem = Math.max(0, GAMES - gp);
+    const pct = gp ? w / gp : null;
+    const linePct = t.line / GAMES;
+    let final = null;
+    if (w > t.line) final = "O";
+    else if (w + rem < t.line) final = "U";
+    let proj = final;
+    if (!proj && pct !== null) proj = pct > linePct ? "O" : pct < linePct ? "U" : null;
+    const overNeed = Math.max(0, Math.ceil(t.line) - w);
+    const underRoom = Math.floor(t.line) - w;
+    return { abbr, name: t.name, line: t.line, w, l, gp, rem, pct, linePct, pace: pct === null ? null : pct * GAMES, final, proj, overNeed, underRoom };
+  }
+
+  const picksClosed = () => !!state.config?.picksCloseAt && Date.now() >= new Date(state.config.picksCloseAt).getTime();
+  const sheetFor = (name) => state.sheets[name] || null;
+
+  function scorePlayer(name, statuses) {
+    const p = sheetFor(name) || { picks: {}, locks: [] };
+    const locks = new Set(p.locks || []);
+    let proj = 0, clinched = 0, alive = 0, made = 0;
+    for (const s of statuses) {
+      const pick = p.picks?.[s.abbr];
+      if (!pick) continue;
+      made++;
+      const val = locks.has(s.abbr) ? 3 : 1;
+      if (s.proj === pick) proj += val;
+      if (s.final === pick) clinched += val;
+      if (!s.final || s.final === pick) alive += val;
+    }
+    return { name, proj, clinched, maxPossible: alive, made };
+  }
+
+  // ---------- render ----------
+  function render() {
+    renderMeta();
+    renderBanner();
+    if (!state.config) return;
+    const statuses = Object.keys(state.config.teams).map(teamStatus);
+    renderLeaders(statuses);
+    renderBoard(statuses);
+    renderPicksTab(statuses);
+  }
+
+  function deadlineStr() {
+    const c = state.config?.picksCloseAt;
+    if (!c) return "the season starts";
+    return new Date(c).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  }
+
+  function renderMeta() {
+    const s = state.standings;
+    if (state.config?.season) $("seasonLabel").textContent = `NBA ${state.config.season} regular season · ${GAMES} games`;
+    if (s?.updatedAt) $("updated").textContent = "Standings updated " + new Date(s.updatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    if (s?.source) $("sourceLink").href = s.source;
+    const am = $("authMeta");
+    if (state.session) am.innerHTML = `${esc(state.session.user.email)} · <button class="linkbtn" id="signOut">Sign out</button>`;
+    else am.textContent = "";
+  }
+
+  function renderBanner() {
+    const b = $("banner");
+    if (!sb) {
+      b.hidden = false;
+      b.innerHTML = "<strong>Picks aren't connected yet.</strong> Add your Supabase URL and anon key to supabase-config.js (see the README).";
+      return;
+    }
+    if (!state.config) { b.hidden = true; return; }
+    if (picksClosed()) {
+      b.hidden = !!state.session;
+      b.innerHTML = `<strong>Picks are locked.</strong> Sign in on the My picks tab to see everyone's picks and points.`;
+      return;
+    }
+    b.hidden = false;
+    b.innerHTML = `<strong>Picks lock ${esc(deadlineStr())}</strong>, 10 minutes before the first tip-off. Until then you only see your own picks; everyone's appear at the deadline.`;
+  }
+
+  function renderLeaders(statuses) {
+    const players = state.config.players || [];
+    const rows = players.map((n) => scorePlayer(n, statuses)).sort((a, b) => b.proj - a.proj || b.clinched - a.clinched || a.name.localeCompare(b.name));
+    const maxPts = 30 + 2 * (state.config.lockCount || 5);
+    let rank = 0, prev = null;
+    $("leaders").innerHTML = rows.map((r, i) => {
+      if (r.proj !== prev) { rank = i + 1; prev = r.proj; }
+      const cw = (r.clinched / maxPts) * 100, pw = Math.max(0, (r.proj - r.clinched) / maxPts) * 100;
+      const foot = sheetFor(r.name)
+        ? `<span>${r.clinched} clinched</span><span>max ${r.maxPossible}</span><span>${r.made}/30 picked</span>`
+        : `<span>${!picksClosed() ? "Picks hidden until the deadline" : state.session ? "No picks submitted" : "Sign in to see picks"}</span>`;
+      return `<div class="leader${rank === 1 && r.proj > 0 ? " first" : ""}">
+        <span class="rank">${rank}</span>
+        <span class="name">${esc(r.name)}</span>
+        <span class="pts num">${r.proj}<small>pts</small></span>
+        <div class="bar" aria-hidden="true"><i class="clinched" style="width:${cw}%"></i><i class="proj" style="width:${pw}%"></i></div>
+        <div class="foot">${foot}</div>
+      </div>`;
+    }).join("");
+  }
+
+  const pctStr = (x) => (x === null ? "—" : x.toFixed(3).replace(/^0/, ""));
+
+  function chaseCell(s) {
+    if (s.final === "O") return `<div class="chase"><span class="status done">Over clinched</span><span class="detail">${s.w} wins &gt; ${s.line}</span></div>`;
+    if (s.final === "U") return `<div class="chase"><span class="status done">Under clinched</span><span class="detail">max ${s.w + s.rem} wins</span></div>`;
+    const needPct = s.rem ? Math.round((s.overNeed / s.rem) * 100) : 0;
+    return `<div class="chase"><span class="status">Both live</span><span class="detail">Over: win ${s.overNeed} of ${s.rem} (${needPct}%) · Under: ≤${s.underRoom} more wins</span></div>`;
+  }
+
+  const SORTS = {
+    name: (a, b) => a.name.localeCompare(b.name),
+    line: (a, b) => a.line - b.line,
+    pct: (a, b) => (a.pct ?? -1) - (b.pct ?? -1),
+    pace: (a, b) => ((a.pace ?? -99) - a.line) - ((b.pace ?? -99) - b.line),
+    chase: (a, b) => (a.rem ? a.overNeed / a.rem : 9) - (b.rem ? b.overNeed / b.rem : 9),
+  };
+
+  function renderBoard(statuses) {
+    const players = state.config.players || [];
+    const { key, dir } = state.sort;
+    const rows = [...statuses].sort((a, b) => dir * SORTS[key](a, b) || a.name.localeCompare(b.name));
+    const th = (k, label, cls = "") => {
+      const sorted = key === k ? ` aria-sort="${dir > 0 ? "ascending" : "descending"}"` : "";
+      const arrow = key === k ? (dir > 0 ? " ▲" : " ▼") : "";
+      return `<th class="sortable ${cls}" data-sort="${k}"${sorted} tabindex="0">${label}${arrow}</th>`;
+    };
+    const head = `<thead><tr>
+      ${th("name", "Team", "team")}${th("line", "Line", "r")}<th class="r">W–L</th>${th("pct", "Win %", "r")}<th class="r">Line %</th>${th("pace", "Pace", "r")}<th>Trending</th>${th("chase", "Chase")}
+      ${players.map((p) => `<th class="player${p === state.player ? " me" : ""}">${esc(p)}</th>`).join("")}
+    </tr></thead>`;
+    const body = rows.map((s) => {
+      const trend = s.proj
+        ? `<span class="pill ${s.proj}${s.final ? " final" : ""}">${s.proj === "O" ? "Over" : "Under"}${s.final ? " ✓" : ""}</span>`
+        : `<span class="pill none">No games</span>`;
+      const cells = players.map((p) => {
+        const sheet = sheetFor(p);
+        if (!sheet) return picksClosed()
+          ? `<td class="c"><span class="pick empty">–</span></td>`
+          : `<td class="c"><span class="pick empty" title="Hidden until the deadline">?</span></td>`;
+        const pk = sheet.picks?.[s.abbr];
+        if (!pk) return `<td class="c"><span class="pick empty">–</span></td>`;
+        const locked = (sheet.locks || []).includes(s.abbr);
+        const cls = !s.proj ? "" : s.proj === pk ? "hit" : "miss";
+        return `<td class="c"><span class="pick ${cls}${s.final ? " final" : ""}" title="${esc(p)}: ${pk === "O" ? "Over" : "Under"}${locked ? " (lock)" : ""}">${pk}${locked ? LOCK_SVG : ""}</span></td>`;
+      }).join("");
+      return `<tr>
+        <td class="team"><div class="team-cell"><span class="abbr">${esc(s.abbr)}</span><span class="tname">${esc(s.name)}</span></div></td>
+        <td class="r num">${s.line.toFixed(1)}</td>
+        <td class="r num">${s.w}–${s.l}</td>
+        <td class="r num">${pctStr(s.pct)}</td>
+        <td class="r num muted">${pctStr(s.linePct)}</td>
+        <td class="r num">${s.pace === null ? "—" : s.pace.toFixed(1)}</td>
+        <td>${trend}</td>
+        <td>${chaseCell(s)}</td>
+        ${cells}
+      </tr>`;
+    }).join("");
+    const totals = players.map((p) => `<td class="c">${sheetFor(p) ? scorePlayer(p, statuses).proj : "–"}</td>`).join("");
+    $("board").innerHTML = head + `<tbody>${body}</tbody><tfoot><tr><td class="team">Projected pts</td><td colspan="7"></td>${totals}</tr></tfoot>`;
+  }
+
+  function renderPicksTab(statuses) {
+    const signedIn = !!state.session;
+    $("signinBox").hidden = signedIn || !sb;
+    const nm = $("notMember");
+    nm.hidden = !(signedIn && state.memberChecked && !state.player);
+    if (!nm.hidden) nm.innerHTML = `<strong>${esc(state.session.user.email)} isn't on the league list.</strong> Ask the league owner to add this email, or sign out and use the email they have on file.`;
+    $("sheetArea").hidden = !(signedIn && state.player);
+    if ($("sheetArea").hidden) return;
+
+    $("meName").textContent = state.player;
+    const lockMax = state.config.lockCount || 5;
+    const mine = state.sheets[state.player] || { picks: {}, locks: [] };
+    const made = Object.keys(mine.picks || {}).length;
+    const locks = (mine.locks || []).length;
+    $("cPicks").textContent = `${made}/${statuses.length}`;
+    $("cPicks").className = made === statuses.length ? "ok" : "";
+    $("cLocks").textContent = `${locks}/${lockMax}`;
+    $("cLocks").className = locks === lockMax ? "ok" : "";
+
+    const closed = picksClosed();
+    $("sheetNote").textContent = closed
+      ? "Picks are locked for the season. Your sheet is shown read-only."
+      : `Tap Over or Under for each team, then lock your ${lockMax} most confident picks. Changes save automatically and stay private until ${deadlineStr()}.`;
+
+    const lockSet = new Set(mine.locks || []);
+    $("sheet").innerHTML = [...statuses].sort((a, b) => a.name.localeCompare(b.name)).map((s) => {
+      const pk = mine.picks?.[s.abbr];
+      const isLock = lockSet.has(s.abbr);
+      const lockDisabled = closed || !pk || (!isLock && lockSet.size >= lockMax);
+      return `<div class="slip${isLock ? " locked" : ""}">
+        <div class="info"><span class="tname">${esc(s.name)}</span><span class="sub num">${s.w}–${s.l}${s.pace !== null ? ` · pace ${s.pace.toFixed(1)}` : ""}</span></div>
+        <div class="line"><b>${s.line.toFixed(1)}</b><small>wins</small></div>
+        <div class="ctrl">
+          <button class="seg O" data-team="${s.abbr}" data-pick="O" aria-pressed="${pk === "O"}" ${closed ? "disabled" : ""}>Over</button>
+          <button class="seg U" data-team="${s.abbr}" data-pick="U" aria-pressed="${pk === "U"}" ${closed ? "disabled" : ""}>Under</button>
+          <button class="lockbtn" data-lock="${s.abbr}" aria-pressed="${isLock}" ${lockDisabled ? "disabled" : ""} title="${isLock ? "Remove lock" : "Make this a lock (3 pts)"}">${LOCK_SVG}Lock</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function showView(v) {
+    state.view = v;
+    store.set("ou.view", v);
+    for (const b of document.querySelectorAll("nav.tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
+    for (const id of ["board", "picks", "rules"]) $("view-" + id).hidden = id !== v;
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
+  }
+
+  // ---------- saving ----------
+  // One write at a time; rapid taps coalesce into the next write.
+  const q = { running: false, dirty: false, timer: null };
+  function queueSave() {
+    q.dirty = true;
+    $("saveState").textContent = "Saving…";
+    if (q.running) return;
+    clearTimeout(q.timer);
+    q.timer = setTimeout(flush, 400);
+  }
+  async function flush() {
+    if (!sb || !state.session || !state.player || q.running) return;
+    q.running = true;
+    while (q.dirty) {
+      q.dirty = false;
+      const p = state.sheets[state.player] || { picks: {}, locks: [] };
+      const { error } = await sb.from("sheets").upsert({
+        user_id: state.session.user.id,
+        player: state.player,
+        picks: p.picks,
+        locks: p.locks,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      if (error) {
+        $("saveState").textContent = "Not saved";
+        toast(picksClosed() ? "Picks are locked, so this change wasn't saved." : "Your picks didn't save. Check your connection and try again.");
+        console.error(error);
+        await loadSheets();
+        break;
+      }
+      $("saveState").textContent = "Saved";
+    }
+    q.running = false;
+  }
+
+  function editMine(fn) {
+    if (!state.player || picksClosed()) return;
+    const cur = state.sheets[state.player] || { picks: {}, locks: [] };
+    const next = { picks: { ...(cur.picks || {}) }, locks: [...(cur.locks || [])] };
+    fn(next);
+    state.sheets[state.player] = next;
+    render();
+    queueSave();
+  }
+
+  // ---------- events ----------
+  document.addEventListener("click", async (e) => {
+    const tab = e.target.closest("nav.tabs button");
+    if (tab) { showView(tab.dataset.view); return; }
+    if (e.target.closest("#signOut")) { await sb.auth.signOut(); return; }
+    const seg = e.target.closest("[data-pick]");
+    if (seg) {
+      const team = seg.dataset.team, pick = seg.dataset.pick;
+      editMine((m) => {
+        if (m.picks[team] === pick) { delete m.picks[team]; m.locks = m.locks.filter((x) => x !== team); }
+        else m.picks[team] = pick;
+      });
+      return;
+    }
+    const lk = e.target.closest("[data-lock]");
+    if (lk) {
+      const team = lk.dataset.lock, max = state.config.lockCount || 5;
+      editMine((m) => {
+        if (m.locks.includes(team)) m.locks = m.locks.filter((x) => x !== team);
+        else if (m.picks[team] && m.locks.length < max) m.locks.push(team);
+      });
+      return;
+    }
+    const sh = e.target.closest("th[data-sort]");
+    if (sh) sortBy(sh.dataset.sort);
+  });
+  document.addEventListener("keydown", (e) => {
+    const sh = e.target.closest?.("th[data-sort]");
+    if (sh && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); sortBy(sh.dataset.sort); }
+  });
+  function sortBy(k) {
+    state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "name" ? 1 : -1 };
+    render();
+  }
+
+  $("signinForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("email").value.trim();
+    const msg = $("signinMsg");
+    msg.textContent = "Sending…";
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    msg.textContent = error
+      ? `Couldn't send the link: ${error.message}`
+      : `Check ${email} for a sign-in link. It can take a minute to arrive.`;
+  });
+
+  // ---------- data ----------
+  async function loadJSON(path) {
+    const r = await fetch(path + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(path + " " + r.status);
+    return r.json();
+  }
+
+  async function loadMember() {
+    state.player = null; state.memberChecked = false;
+    if (!state.session) return;
+    const { data } = await sb.from("members").select("player").maybeSingle();
+    state.player = data?.player || null;
+    state.memberChecked = true;
+  }
+
+  // The database returns only your own sheet before the deadline, and everyone's after it.
+  async function loadSheets() {
+    if (!sb || !state.session) { state.sheets = {}; render(); return; }
+    const { data, error } = await sb.from("sheets").select("player, picks, locks");
+    if (error) { console.error(error); return; }
+    const next = {};
+    for (const row of data || []) next[row.player] = { picks: row.picks || {}, locks: row.locks || [] };
+    if (q.running || q.dirty) next[state.player] = state.sheets[state.player]; // keep unsaved edits
+    state.sheets = next;
+    render();
+  }
+
+  async function onAuth(session) {
+    state.session = session;
+    await loadMember();
+    await loadSheets();
+    render();
+  }
+
+  showView(state.view);
+  (async () => {
+    try {
+      const [config, standings] = await Promise.all([loadJSON("data/config.json"), loadJSON("data/standings.json").catch(() => null)]);
+      state.config = config; state.standings = standings;
+      state.wasClosed = picksClosed();
+    } catch (err) {
+      $("leaders").innerHTML = `<div class="notice" style="grid-column:1/-1"><strong>Couldn't load the league data.</strong> Refresh the page to try again.</div>`;
+      console.error(err);
+    }
+    render();
+    if (!sb) return;
+    const { data } = await sb.auth.getSession();
+    await onAuth(data.session);
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") onAuth(session);
+      else state.session = session;
+    });
+    // When the deadline passes with the page open, lock the sheet and pull in everyone's picks.
+    setInterval(() => {
+      const closed = picksClosed();
+      if (closed !== state.wasClosed) { state.wasClosed = closed; loadSheets(); }
+      render();
+    }, 30000);
+  })();
+})();
+</script>
+</body>
+</html>
